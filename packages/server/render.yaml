@@ -3,13 +3,11 @@ services:
     name: gift-upgrader-backend
     runtime: node
     plan: free
-    buildCommand: npm install && npm run build:shared && cd packages/server && npx prisma db push --accept-data-loss && npx tsx prisma/seed.ts && npm run build
-    startCommand: cd packages/server && npm run start
+    buildCommand: npm install && npm run build:shared && npm run db:push && npm run db:seed && npm run build:server
+    startCommand: npm run start:server
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 3001
       - key: BOT_TOKEN
         sync: false
       - key: CORS_ORIGIN

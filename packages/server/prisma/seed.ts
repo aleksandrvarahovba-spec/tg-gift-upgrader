@@ -8,9 +8,14 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('--- Starting NFT Gift Upgrader Database Seed (100% VERIFIED FRAGMENT CDN GIFTS) ---');
 
-  const giftsJsonPath = path.resolve('packages/server/prisma/verifiedFragmentGifts.json');
-  if (!fs.existsSync(giftsJsonPath)) {
-    throw new Error(`Gifts data not found at: ${giftsJsonPath}`);
+  const possiblePaths = [
+    path.join(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1')), 'verifiedFragmentGifts.json'),
+    path.resolve('packages/server/prisma/verifiedFragmentGifts.json'),
+    path.resolve('prisma/verifiedFragmentGifts.json'),
+  ];
+  const giftsJsonPath = possiblePaths.find((p) => fs.existsSync(p));
+  if (!giftsJsonPath) {
+    throw new Error(`Gifts data not found. Looked in: ${possiblePaths.join(', ')}`);
   }
 
   const giftsData: any[] = JSON.parse(fs.readFileSync(giftsJsonPath, 'utf-8'));
