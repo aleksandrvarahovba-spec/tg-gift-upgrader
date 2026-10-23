@@ -1,0 +1,170 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id             String           @id @default(uuid())
+  telegramId     String           @unique
+  username       String?
+  firstName      String?
+  lastName       String?
+  photoUrl       String?
+  balance        Float            @default(100.0)
+
+  // Bonuses & Wager
+  wagerTotal       Float          @default(0)
+  wagerRequired    Float          @default(0)
+  totalDeposited   Float          @default(0)
+  lastDailyBonus   DateTime?
+  lastDailyBonusAt DateTime?
+  dailyStreak      Int            @default(0)
+  referralEarnings Float          @default(0)
+  referredCount    Int            @default(0)
+
+  // Streamer Mode & Risk Controls
+  luckyModeEnabled Boolean        @default(false)
+  maxWinLimit      Float          @default(0) // 0 = no limit
+
+  // Provably Fair
+  serverSeed     String
+  serverSeedHash String
+  clientSeed     String           @default("user_seed_v1")
+  nonce          Int              @default(0)
+
+  inventory      UserInventory[]
+  games          UpgradeHistory[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+model Gift {
+  id              String           @id @default(uuid())
+  name            String
+  slug            String           @unique
+  price           Float
+  imageUrl        String
+  rarity          String           // COMMON, UNCOMMON, RARE, EPIC, LEGENDARY
+  badge           String?
+  color           String           // Hex color
+  collection      String           @default("Telegram Gifts")
+  mintNumber      Int?             @default(1)
+
+  backdropName    String?          @default("Onyx Black")
+  backdropRarity  Float?           @default(0.5)
+  backdropFrom    String?          @default("#181924")
+  backdropTo      String?          @default("#07080d")
+  backdropGlow    String?          @default("#a855f7")
+  backdropAccent  String?          @default("#fbbf24")
+  backdropPattern String?          @default("diamonds")
+
+  inventory       UserInventory[]
+  sourceGames     UpgradeHistory[] @relation("SourceGift")
+  targetGames     UpgradeHistory[] @relation("TargetGift")
+  pvpCreatorGames  PvpGame[]        @relation("PvpCreatorGift")
+  pvpOpponentGames PvpGame[]        @relation("PvpOpponentGift")
+  createdAt       DateTime         @default(now())
+}
+
+model PvpGame {
+  id               String   @id @default(uuid())
+  creatorUserId    String
+  creatorUsername  String?
+  creatorSide      String   // 'TON' | 'FRAGMENT'
+  creatorGiftId    String
+  creatorGift      Gift     @relation("PvpCreatorGift", fields: [creatorGiftId], references: [id])
+
+  opponentUserId   String?
+  opponentUsername String?
+  opponentSide     String?  // opposite of creatorSide
+  opponentGiftId   String?
+  opponentGift     Gift?    @relation("PvpOpponentGift", fields: [opponentGiftId], references: [id])
+
+  winnerUserId     String?
+  winnerUsername   String?
+  winningSide      String?  // 'TON' | 'FRAGMENT'
+  roll             Float?   // 0.0 - 100.0
+  creatorChance    Float?   // Exact percentage for creator
+  opponentChance   Float?   // Exact percentage for opponent
+  serverSeed       String?
+  serverSeedHash   String?
+  status           String   @default("WAITING") // WAITING | PLAYING | FINISHED
+  createdAt        DateTime @default(now())
+}
+
+model Promocode {
+  code          String   @id
+  bonusType     String   // 'BALANCE' | 'GIFT' | 'BOTH'
+  balanceAmount Float    @default(0)
+  giftSlug      String?
+  description   String?
+  maxUses       Int      @default(1000)
+  usedCount     Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  redemptions   UserPromocode[]
+}
+
+model UserPromocode {
+  id          String    @id @default(uuid())
+  userId      String
+  code        String
+  promocode   Promocode @relation(fields: [code], references: [code])
+  usedAt      DateTime  @default(now())
+
+  @@unique([userId, code])
+}
+
+model UserInventory {
+  id          String          @id @default(uuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  giftId      String
+  gift        Gift            @relation(fields: [giftId], references: [id], onDelete: Restrict)
+  status      String          @default("AVAILABLE") // AVAILABLE | BURNED | WITHDRAWN
+  isLocked    Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  burnedInGame UpgradeHistory? @relation("BurnedInventoryItem")
+
+  @@index([userId, status])
+}
+
+model UpgradeHistory {
+  id                String         @id @default(uuid())
+  userId            String
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  sourceInventoryId String?        @unique
+  sourceInventory   UserInventory? @relation("BurnedInventoryItem", fields: [sourceInventoryId], references: [id])
+
+  sourceGiftId      String
+  sourceGift        Gift           @relation("SourceGift", fields: [sourceGiftId], references: [id])
+  targetGiftId      String
+  targetGift        Gift           @relation("TargetGift", fields: [targetGiftId], references: [id])
+
+  sourcePrice       Float
+  targetPrice       Float
+
+  chance            Float          // 1.0 - 80.0
+  multiplier        Float          // e.g. 2.0
+  roll              Float          // 0.0000 - 99.9999
+  rollAngle         Float          // 0.0 - 360.0
+  isWon             Boolean
+
+  // Provably Fair Audit
+  serverSeed        String         // Revealed seed
+  serverSeedHash    String         // Hash committed prior to roll
+  clientSeed        String
+  nonce             Int
+
+  createdAt         DateTime       @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
