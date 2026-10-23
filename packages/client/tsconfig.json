@@ -18,7 +18,14 @@
     "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+
+    /* Monorepo Workspace Aliases */
+    "baseUrl": ".",
+    "paths": {
+      "@upgrader/shared": ["../shared/src/index.ts"],
+      "@upgrader/shared/*": ["../shared/src/*"]
+    }
   },
-  "include": ["src"]
+  "include": ["src", "../shared/src"]
 }

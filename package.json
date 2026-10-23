@@ -6,6 +6,8 @@
     "packages/*"
   ],
   "scripts": {
+    "postinstall": "npm run build:shared",
+    "vercel-build": "npm run build:shared && npm run build:client",
     "build:shared": "npm run build --workspace=@upgrader/shared",
     "build:server": "npm run build --workspace=@upgrader/server",
     "build:client": "npm run build --workspace=@upgrader/client",
