@@ -12,7 +12,7 @@
 2. Скопируй ссылку на свой репозиторий и выполни в терминале проекта три команды:
 
 ```bash
-git remote add origin <ссылка_на_твой_github>
+git remote add origin https://github.com/aleksandrvarahovba-spec/tg-gift-upgrader.git
 git branch -M main
 git push -u origin main
 ```
